@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>디퍼피 시안 v1</title>
+<style>
+  body{margin:0;background:#c0c0c0;font-family:"Gulim","굴림",sans-serif;color:#000}
+  header{background:#000080;color:#fff;padding:6px 12px;font-size:14px;font-weight:bold;display:flex;justify-content:space-between}
+  header span{font-weight:normal}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;padding:18px}
+  .card{background:#fff;border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:1px 1px 0 #000;padding:10px}
+  .card h3{margin:0 0 6px;font-size:14px;font-weight:bold}
+  .card p{margin:6px 0 0;font-size:12px;color:#333;line-height:1.5}
+  svg{width:100%;height:auto;display:block;background:#fff}
+  footer{padding:0 18px 24px;font-size:12px;color:#333}
+</style>
+</head>
+<body>
+<header>디퍼피_시안_v1.bmp - 그림판 <span>2026-09-18</span></header>
+<div class="grid" id="grid"></div>
+<footer>
+  <b>공통 규칙</b> — 검정 3px 선, 페인트통으로 채운 색(선 밖으로 살짝 새거나 덜 채워짐), 눈은 점 두 개, 좌우 대칭 실패, 다리는 막대기. 그림판 기본 팔레트만 쓴다.
+</footer>
+
+<script>
+// ---- 마우스 손떨림 생성기 ----
+let seed = 7;
+function rnd(){ seed = (seed*9301+49297)%233280; return seed/233280 - .5; }
+// pts: 매끈한 점 목록 → 흔들린 폴리라인 (n: 점 사이 세분, amp: 떨림 크기)
+function wob(pts, amp=2.4, n=6, close=false){
+  const out=[];
+  const list = close ? [...pts, pts[0]] : pts;
+  for(let i=0;i<list.length-1;i++){
+    const [x1,y1]=list[i],[x2,y2]=list[i+1];
+    for(let k=0;k<n;k++){
+      const t=k/n;
+      out.push([x1+(x2-x1)*t+rnd()*amp, y1+(y2-y1)*t+rnd()*amp]);
+    }
+  }
+  out.push(list[list.length-1]);
+  return out.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ');
+}
+// 원을 점 목록으로 (살짝 찌그러진)
+function circ(cx,cy,r,squash=1,n=14){
+  const p=[];
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2; p.push([cx+Math.cos(a)*r*(1+rnd()*.12), cy+Math.sin(a)*r*squash*(1+rnd()*.12)]);}
+  return p;
+}
+const S=(pts,opt={})=>`<polyline points="${wob(pts,opt.amp,opt.n,opt.close)}" fill="${opt.fill||'none'}" stroke="${opt.stroke||'#000'}" stroke-width="${opt.w||3}" stroke-linecap="round" stroke-linejoin="round"/>`;
+// 페인트통 채우기: 외곽선보다 살짝 어긋난 도형(새거나 덜 채워짐)
+const F=(pts,color,dx=2,dy=1)=>`<polygon points="${wob(pts.map(([x,y])=>[x+dx,y+dy]),2.5,3,true)}" fill="${color}" stroke="none"/>`;
+const dot=(x,y,r=3.2)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#000"/>`;
+const svg=(inner,vb="0 0 240 240")=>`<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+
+const TAN="#f5deb3", BROWN="#804000", PINK="#ff80c0", YEL="#ffff00", RED="#ff0000", BLUE="#0000ff";
+
+const cards=[];
+
+// 1. 기본형 — 서 있는 디퍼피
+{
+  const head=circ(120,90,52,0.92);
+  const body=[[85,135],[165,138],[172,190],[80,192]];
+  const earL=[[72,70],[52,110],[78,120]];
+  const earR=[[168,66],[190,105],[164,118]];
+  cards.push({t:"① 기본형 — 서 있는 디퍼피", d:"머리가 몸보다 큼. 다리 네 개 길이가 다 다름. 꼬리는 그냥 선 하나.",
+  s:svg(
+    F(body,TAN,3,2)+F(head,TAN,-2,2)+
+    S(body,{close:true})+S(head,{close:true,amp:2})+
+    F(earL,BROWN,1,2)+S(earL,{close:true})+F(earR,BROWN,-2,1)+S(earR,{close:true})+
+    dot(102,86)+dot(140,84,2.6)+
+    S([[118,100],[124,104],[117,108]],{w:2.5})+
+    S([[108,118],[120,126],[134,116]],{w:2.5})+
+    S([[92,192],[90,224]])+S([[108,192],[110,220]])+S([[148,192],[150,226]])+S([[164,190],[168,214]])+
+    S([[172,165],[196,140],[192,150]],{amp:2.5})
+  )});
+}
+
+// 2. 감자형 — 몸통 하나
+{
+  const blob=[[60,120],[80,80],[130,70],[180,90],[195,140],[170,180],[100,185],[62,160]];
+  const eL=[[76,84],[50,130],[80,132]], eR=[[172,84],[204,126],[176,136]];
+  cards.push({t:"② 감자형 — 몸통 하나짜리", d:"머리·몸 구분 없이 감자 한 덩이. 귀는 옆에 축 늘어진 세모 두 개. 제일 하찮음.",
+  s:svg(
+    F(blob,TAN,4,-2)+S(blob,{close:true,amp:2.2})+
+    F(eL,BROWN)+S(eL,{close:true})+F(eR,BROWN,-2,2)+S(eR,{close:true})+
+    dot(112,112)+dot(150,110)+
+    dot(131,132,4.5)+
+    S([[118,148],[132,154],[146,146]],{w:2.5})+
+    S([[92,185],[90,215]])+S([[120,186],[122,212]])+S([[150,184],[152,216]])+
+    S([[190,150],[215,130]],{amp:2})
+  )});
+}
+
+// 3. 얼굴만 — 아이콘용
+{
+  const head=circ(120,125,72,0.95);
+  const eL=[[58,90],[36,150],[68,160]], eR=[[182,88],[206,148],[176,158]];
+  const tongue=[[116,170],[130,170],[124,188]];
+  cards.push({t:"③ 얼굴만 — 프로필·아이콘용", d:"동그라미 하나에 축 늘어진 귀. 한쪽 눈이 더 큼. 혀 내밈.",
+  s:svg(
+    F(head,TAN,3,3)+S(head,{close:true,amp:2.4})+
+    F(eL,BROWN,2,0)+S(eL,{close:true})+F(eR,BROWN,-3,2)+S(eR,{close:true})+
+    dot(96,118,3.5)+dot(146,114,5)+
+    S([[114,138],[126,140],[120,150]],{w:2.5,close:true})+
+    S([[100,162],[120,172],[140,160]],{w:2.5})+
+    F(tongue,PINK,0,0)+S(tongue,{close:true,w:2.5})
+  )});
+}
+
+// 4. 앉은 디퍼피
+{
+  const head=circ(120,80,46,0.9);
+  const body=[[92,120],[150,122],[168,200],[74,204]];
+  const eL=[[78,60],[60,102],[84,108]], eR=[[162,58],[182,100],[156,106]];
+  cards.push({t:"④ 앉은 디퍼피", d:"엉덩이 붙이고 앉은 모양. 앞다리 두 개만 그렸다. 눈 사이 간격이 너무 넓음.",
+  s:svg(
+    F(body,TAN,-3,2)+F(head,TAN,2,-2)+
+    S(body,{close:true,amp:2})+S(head,{close:true,amp:2})+
+    F(eL,BROWN)+S(eL,{close:true})+F(eR,BROWN,-2,1)+S(eR,{close:true})+
+    dot(96,78)+dot(148,76)+
+    dot(121,94,3.8)+S([[110,106],[121,112],[132,104]],{w:2.5})+
+    S([[104,204],[100,228]])+S([[140,204],[144,226]])+
+    S([[170,190],[200,160],[210,175]],{amp:2.5})
+  )});
+}
+
+// 5. 로고형 — 글씨 포함
+{
+  const head=circ(70,80,40,0.95);
+  const eL=[[38,58],[22,96],[46,100]], eR=[[104,56],[122,94],[98,100]];
+  const T={w:3.5,amp:2};
+  cards.push({t:"⑤ 로고형 — 마우스로 쓴 글씨", d:"왼쪽에 얼굴, 오른쪽에 마우스로 쓴 '디퍼피'. 글자 크기가 제멋대로.",
+  s:svg(
+    F(head,TAN,3,2)+S(head,{close:true,amp:2})+
+    F(eL,BROWN)+S(eL,{close:true})+F(eR,BROWN,-2,1)+S(eR,{close:true})+
+    dot(56,76)+dot(86,74,4)+
+    dot(72,92,3.5)+S([[62,102],[72,108],[82,100]],{w:2.5})+
+    // 디  (ㄷ + ㅣ)
+    S([[178,50],[150,52],[150,110],[178,108]],T)+S([[196,48],[196,112]],T)+
+    // 퍼  (ㅍ + ㅓ)
+    S([[132,130],[176,128]],T)+S([[144,130],[142,158]],T)+S([[166,128],[164,160]],T)+S([[134,160],[176,158]],T)+
+    S([[206,146],[226,144]],T)+S([[228,120],[226,180]],T)+
+    // 피  (ㅍ + ㅣ)
+    S([[132,190],[176,188]],T)+S([[144,190],[142,218]],T)+S([[166,188],[164,220]],T)+S([[134,220],[178,218]],T)+
+    S([[210,180],[208,234]],T)
+  , "0 0 260 240")});
+}
+
+// 6. 페인트통 사고 버전
+{
+  const head=circ(120,90,52,0.92);
+  const body=[[85,135],[165,138],[172,190],[80,192]];
+  const eL=[[72,70],[52,110],[78,120]], eR=[[168,66],[190,105],[164,118]];
+  cards.push({t:"⑥ 페인트통 사고 버전", d:"기본형인데 색 채우다 실수. 한쪽 귀는 안 칠했고, 몸에 노란색이 튀었고, 배경 한 귀퉁이가 파랗게 새어 들어갔다.",
+  s:svg(
+    `<polygon points="0,0 60,0 0,70" fill="${BLUE}"/>`+
+    F(body,YEL,6,4)+F(body,TAN,-2,0)+F(head,TAN,3,1)+
+    S(body,{close:true})+S(head,{close:true,amp:2})+
+    F(eL,BROWN,1,2)+S(eL,{close:true})+
+    S(eR,{close:true})+
+    dot(102,86)+dot(140,84,2.6)+
+    dot(120,104,3.5)+S([[108,118],[120,126],[134,116]],{w:2.5})+
+    S([[92,192],[90,224]])+S([[108,192],[110,220]])+S([[148,192],[150,226]])+S([[164,190],[168,214]])+
+    S([[172,165],[196,140],[192,150]],{amp:2.5})+
+    `<circle cx="205" cy="205" r="9" fill="${RED}"/>`
+  )});
+}
+
+document.getElementById('grid').innerHTML = cards.map(c=>`<div class="card"><h3>${c.t}</h3>${c.s}<p>${c.d}</p></div>`).join('');
+</script>
+</body>
+</html>
